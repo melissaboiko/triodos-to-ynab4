@@ -82,7 +82,7 @@ for inrow in r:
 
     outrow = [
         inrow['Buchungstag'].replace('.', '/'),
-        inrow['Auftraggeber/Zahlungsempfänger'] or '?', # payee; shouldn't be empty
+        inrow['Empfänger/Zahlungspflichtiger'] or '?', # payee; shouldn't be empty
         '', # category,
         memo,
         outflow,

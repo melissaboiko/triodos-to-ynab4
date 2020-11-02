@@ -10,7 +10,9 @@ import csv
 import locale
 import re
 
-# TODO: might need this later for international transactions
+# apparenty always EUR in Triodos, even for international transactions (they
+# appear already converted)
+#
 # BUDGETCUR = 'EUR'
 
 def strip_newlines(string):
@@ -49,6 +51,20 @@ r = csv.DictReader(processed, delimiter=';')
 w = csv.writer(outf, delimiter=',', quotechar='"')
 w.writerow(['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow'])
 
+def get_payee_from_Vorgang(Vorgang):
+    '''Extracts payee from the informational/memo/Vorgang field.
+
+    In credit card transactions, the payer/payee etc. fields are coming empty.
+    The payee apears to be bundled along with everything else as a text blob in
+    the 'Vorgang/Verwendungszweck' column. This function tries to fetch it from there.
+    '''
+
+    lines = Vorgang.split("\n")
+    if lines[0] in ('Lastschrift', 'Überweisungsgutschr.'):
+        return lines[1]
+    else:
+        return None
+
 for inrow in r:
     # for key in inrow.keys():
     #     print(key, inrow[key])
@@ -80,9 +96,13 @@ for inrow in r:
         if inrow[key]:
             memo += "; %s: %s" % (key, inrow[key])
 
+    payee = inrow['Empfänger/Zahlungspflichtiger']
+    if not payee:
+        payee = get_payee_from_Vorgang(inrow['Vorgang/Verwendungszweck'])
+
     outrow = [
         inrow['Buchungstag'].replace('.', '/'),
-        inrow['Empfänger/Zahlungspflichtiger'] or '?', # payee; shouldn't be empty
+        payee or '?', # payee; shouldn't be empty
         '', # category,
         memo,
         outflow,

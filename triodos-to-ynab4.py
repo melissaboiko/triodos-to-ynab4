@@ -9,13 +9,14 @@ import sys
 import csv
 import locale
 import re
+from typing import Optional
 
 # apparenty always EUR in Triodos, even for international transactions (they
 # appear already converted)
 #
 # BUDGETCUR = 'EUR'
 
-def strip_newlines(string):
+def strip_newlines(string: str) -> str:
     '''Replaces newlines (Unix or DOS) with colons.
 
 Used because YNAB4 can't handle multi-line values in CSVs even if quoted.
@@ -29,7 +30,7 @@ locale.setlocale(locale.LC_NUMERIC, LOCALE)
 if len(sys.argv) > 1:
     raw =  open(sys.argv[1], 'rt', encoding='iso-8859-1')
 else:
-    raw = sys.sdtdin
+    raw = sys.stdin
 processed=[]
 
 # first skip all the trash Triodos puts on top of the CSV file (u.u)
@@ -51,7 +52,7 @@ r = csv.DictReader(processed, delimiter=';')
 w = csv.writer(outf, delimiter=',', quotechar='"')
 w.writerow(['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow'])
 
-def get_payee_from_Vorgang(Vorgang):
+def get_payee_from_Vorgang(Vorgang: str) -> Optional[str]:
     '''Extracts payee from the informational/memo/Vorgang field.
 
     In credit card transactions, the payer/payee etc. fields are coming empty.
@@ -98,7 +99,11 @@ for inrow in r:
 
     payee = inrow['Empfänger/Zahlungspflichtiger']
     if not payee:
-        payee = get_payee_from_Vorgang(inrow['Vorgang/Verwendungszweck'])
+        inner_payee = get_payee_from_Vorgang(inrow['Vorgang/Verwendungszweck'])
+        if inner_payee:
+            payee = inner_payee
+        else:
+            payee = ''
 
     outrow = [
         inrow['Buchungstag'].replace('.', '/'),
